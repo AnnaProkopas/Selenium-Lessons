@@ -1,3 +1,5 @@
+Это конспект пройденных лекций. Да, мне удобно вести его так ))
+--------------------------
 ```
 python3 -m venv selenium_env
 source selenium_env/bin/activate
