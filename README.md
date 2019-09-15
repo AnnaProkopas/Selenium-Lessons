@@ -1,5 +1,3 @@
-Это конспект пройденных лекций. Да, мне удобно вести его так ))
---------------------------
 ```
 python3 -m venv selenium_env
 source selenium_env/bin/activate
@@ -289,4 +287,211 @@ button = WebDriverWait(browser, 5).until(
 - [stackoverflow]https://stackoverflow.com/questions/15122864/selenium-wait-until-document-is-ready)
 - [codeship]https://blog.codeship.com/get-selenium-to-wait-for-page-load/)
 
-# Текстовые фреймворки
+# Тестовые фреймворки
+
+[руководство про написание юнит-тестов в Python](https://realpython.com/python-testing/)
+
+[ Пирамида тестов на практике](https://habr.com/ru/post/358950/)
+
+### Выводим ошибки правильно
+
+```python
+assert self.is_element_present('new_announcement_button', timeout=30), "No new announcement button on profile page"
+```
+Способы сздания сообщений об ошибке:
+- ```"Wrong text, got" + actual_result + ", something wrong"```
+- ```"Let's count together! {}, then goes {}, and then {}".format("one", "two", "three")``` [подробнее](https://realpython.com/python-string-formatting/#2-new-style-string-formatting-strformat)
+- [подробнее](https://realpython.com/python-string-formatting/#3-string-interpolation-f-strings-python-36)
+```python
+str1 = "one"
+str2 = "two"
+str3 = "third"
+f"Let's count together! {str1}, then goes {str2}, and then {str3}"
+```
+> Переменная может сменить значение
+>```python
+>catalog_text = self.catalog_link.text # считываем текст и записываем его в переменную
+>assert catalog_text == "Каталог", \
+>    f"Wrong language, got {catalog_text} instead of 'Каталог'"  
+>```
+
+Можно выделить три основных тестовых фреймворка для Python: **unittest, PyTest** и **nose**.
+## unittest
+>название тестового метода должно начинаться со слова "test_" или заканчиваться словом "_test"
+```python
+def test_name_for_your_test():
+```
+- Тесты обязательно должны находиться в специальном тестовом классе
+- Вместо assert должны использоваться специальные assertion методы
+
+[документация unittest](https://docs.python.org/3/library/unittest.html)
+
+## PyTest
+
+1) 
+   ```
+   pip install pytest==5.1.1
+   pytest test_abs_project.py
+   ```
+
+2) Подробный отчёт с поддержкой цветовых схем из коробки.
+
+3) PyTest не требует написания дополнительных специфических конструкций в тестах, как того требует unittest (no boilerplate).
+
+4) Для проверок используется стандартный assert из Python.
+
+5) Возможность создания динамических фикстур (специальных функций, которые настраивают тестовые окружения и готовят тестовые данные).
+
+6) Дополнительные возможности по настройке фикстур.
+
+7) Параметризация тестов — для одного теста можно задать разные параметры (тест запустится несколько раз с разными тестовыми данными).
+
+8) Наличие маркировок (marks), которые позволяют маркировать тесты для их выборочного запуска.
+
+9)  Возможность передавать дополнительные параметры через командную строку для настройки тестовых окружений.
+
+10) Большое количество плагинов, которые расширяют возможности PyTest и позволяют решать узкоспециализированные проблемы, что может сэкономить много времени.
+    
+Запуск:
+```
+pytest Module\ 3/lesson2_step12.py 
+```
+### Версии пакетов ...
+Сохраняем:
+```
+pip freeze > requirements.txt
+```
+Читаем/качаем/устанавливаем:
+```
+pip install -r requirements.txt
+```
+- если мы не передали никакого аргумента в команду, а написали просто pytest, тест-раннер начнёт поиск в текущей директории
+- как аргумент можно передать файл, путь к директории или любую комбинацию директорий и файлов, например: 
+```python
+pytest scpripts/selenium_scripts
+# найти все тесты в директории scripts/selenium_scripts
+
+pytest test_user_interface.py
+# найти и выполнить все тесты в файле 
+
+pytest scripts/drafts.py::test_register_new_user_parametrized
+# найти тест с именем test_register_new_user_parametrized в указанном файле в указанной директории и выполнить 
+```
+- дальше происходит рекурсивный поиск: то есть PyTest обойдет все вложенные директории
+- во всех директориях PyTest ищет файлы, которые удовлетворяют правилу  test_*.py или *_test.py (то есть начинаются на test_ или заканчиваются _test и имеют расширение .py)
+- внутри всех этих файлов находит тестовые функции по следующему правилу:
+  - все тесты, название которых начинается с test, которые находятся вне классов
+  - все тесты, название которых начинается с test внутри классов, имя которых начинается с Test (и без метода __init__ внутри класса)
+
+[Conventions for Python test discovery](https://docs.pytest.org/en/latest/goodpractices.html#conventions-for-python-test-discovery)\
+[Полезные команды для Pytest](https://gist.github.com/amatellanes/12136508b816469678c2)
+```python
+pytest -v 
+#verbose, то есть подробный
+```
+## fixtures
+
+Фикстуры в контексте PyTest — это вспомогательные функции для наших тестов, которые не являются частью тестового сценария.
+
+Фикстура, возвращающая значение:
+
+```python
+@pytest.fixture
+def browser():
+    print("\nstart browser for test..")
+    browser = webdriver.Chrome()
+    return browser
+
+class TestMainPage1():
+    # вызываем фикстуру в тесте, передав ее как параметр
+    def test_guest_should_see_login_link(self, browser):
+```
+Для каждого метода создается новый browser.
+
+**Финализаторы**
+```python
+@pytest.fixture
+def browser():
+    print("\nstart browser for test..")
+    browser = webdriver.Chrome()
+    yield browser
+    # этот код выполнится после завершения теста
+    print("\nquit browser..")
+    browser.quit()
+```
+Иначе:
+```python
+@pytest.fixture()
+def browser(request):
+    print("\nstart browser for test..")
+    browser = webdriver.Chrome()
+    def fin():
+        print("\nquit browser..")
+        browser.close()
+    request.addfinalizer(fin)
+    return browser
+```
+Управление областью видимости ***scope***: **“function”, “class”, “module”, “session”**. Фикстура вызовется один раз для метода/класса/модуля/всех тестов, запущеннных в сессии.
+```python
+@pytest.fixture(scope="class")
+```
+Автовызов фикстуры:
+```python
+@pytest.fixture(autouse=True)
+```
+[habr](https://habr.com/ru/company/yandex/blog/242795/)\
+[medium](https://medium.com/@dmrlx/%D0%B2%D0%B2%D0%B5%D0%B4%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B2-pytest-cc6175c7d0dc)\
+[docs.pytest](https://docs.pytest.org/en/latest/fixture.html)
+
+## Маркировка тестов
+Маркируем методы и классы:
+```python
+@pytest.mark.mark_name
+```
+Запуск:
+```
+pytest -s -v -m mark_name test_file.py
+```
+Но надо сделать это явно:\
+pytest.ini
+```
+[pytest]
+markers =
+    mark_name1: marker for ...
+    mark_name2: comment, not required
+    win10
+```
+### Инверсия 
+```
+pytest -s -v -m "not mark_name" test_file.py
+```
+### Объединение
+```
+pytest -s -v -m "mark_name1 or mark_name2" test_file.py
+```
+### Пересечение, один тест - несколько макировок
+```
+pytest -s -v -m "mark_name1 and win10" test_file.py
+```
+### Пропуск теста
+```python
+@pytest.mark.skip
+```
+### В ожидании падения
+```python
+@pytest.mark.xfail
+```
+Когда починят: **XPASS** (“unexpectedly passing” - неожиданно проходит)
+
+Указывать причины - хороший тон.
+```python
+    @pytest.mark.xfail(reason="fixing this bug right now")
+```
+Запуск с reason:
+```python
+pytest -rx -v test_fixture10a.py
+#подробности по XPASS
+pytest -rX -v test_fixture10b.py
+```
+[Подробнее в документации](https://docs.pytest.org/en/latest/skipping.html)
+## Параметризация, конфигурирование, плагины
